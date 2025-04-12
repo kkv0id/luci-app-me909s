@@ -1,0 +1,145 @@
+<%+header%>
+<div class="cbi-section fade-in">
+    <h3 id="none-modem" class="error"><%:未检测到ME909S模块%></h3>
+    <div id="modem" style="display: none;">
+        <span class="panel-title"><%:Status%><span id="temp"> -°c</span></span>
+        <div class="table">
+            <div class="tr">
+                <div class="td left" width="33%"><%:品牌%></div><div id="manufacturer" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:型号%></div><div id="model" class="td left" width="33%">-</div>
+            </div>
+            <div class="tr">
+                <div class="td left" width="33%"><%:固件版本%></div><div id="revision" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:IMEI%></div><div id="imei" class="td left" width="33%">-</div>
+            </div>
+            <div class="tr">
+                <div class="td left" width="33%" id="simslot">eSIM</div><div id="sim_state" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:运营商%></div><div id="operator" class="td left" width="33%">-</div>
+            </div>
+            <div class="tr">
+                <div class="td left" width="33%"><%:ICCID%></div><div id="iccid" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:IMSI%></div><div id="imsi" class="td left" width="33%">-</div>
+            </div>
+            <div class="tr">
+                <div class="td left" width="33%"><%:网络%></div><div id="mode" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:频段%></div><div id="band" class="td left" width="33%">-</div>
+            </div>
+            <div class="tr">
+                <div class="td left" width="33%"><%:物理小区%></div><div id="pci" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:频点%></div><div id="arfcn" class="td left" width="33%">-</div>
+            </div>
+            <div class="tr">
+                <div class="td left" width="33%"><%:信号强度%></div><div id="rxlev" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:接收功率%></div><div id="rsrp" class="td left" width="33%">-</div>
+            </div>
+            <div class="tr">
+                <div class="td left" width="33%"><%:接收质量%></div><div id="rsrq" class="td left" width="33%">-</div>
+                <div class="td left" width="33%"><%:跟踪区码%></div><div id="tac" class="td left" width="33%">-</div>
+            </div>
+        </div>
+    </div>   
+</div>
+<script type="text/javascript">
+    let operaMap = {
+        46000: '中国移动',
+        46001: '中国联通',
+        46002: '中国移动',
+        46003: '中国电信',
+        46007: '中国移动',
+        46009: '中国联通',
+        46011: '中国电信',
+        46015: '中国广电',
+    };
+    (async function () {
+        let interface;
+        await L.require('uci')
+        await L.uci.load('network');
+        L.uci.sections('network', 'interface', function (sec, sid) {
+            if (sec.proto == 'ecm') interface = sid;
+        });
+        var none_modem = document.getElementById('none-modem');
+        var modem = document.getElementById('modem');
+        if (interface == undefined) {
+            none_modem.style.display = 'block';
+            modem.style.display = 'none';
+            return
+        }
+        none_modem.style.display = 'none';
+        modem.style.display = 'block';
+        XHR.poll(5, '<%=url("admin/me909s/status/data")%>/' + interface, null, function (x, status) {
+            var temp = document.getElementById('temp');
+            var manufacturer = document.getElementById('manufacturer');
+            var model = document.getElementById('model');
+            var revision = document.getElementById('revision');
+            var imei = document.getElementById('imei');
+            var simslot = document.getElementById('simslot');
+            var sim_state = document.getElementById('sim_state');
+            var operator = document.getElementById('operator');
+            var iccid = document.getElementById('iccid');
+            var imsi = document.getElementById('imsi');
+            var mode = document.getElementById('mode');
+            var band = document.getElementById('band');
+            var pci = document.getElementById('pci');
+            var arfcn = document.getElementById('arfcn');
+            var rxlev = document.getElementById('rxlev');
+            var rsrp = document.getElementById('rsrp');
+            var rsrq = document.getElementById('rsrq');
+            var tac = document.getElementById('tac');
+            if (status.temp) {
+                temp.innerHTML = String.format(" %s°C", status.temp);
+            }
+            if (status.manufacturer) {
+                manufacturer.innerHTML = String.format('%s', status.manufacturer);
+            }
+            if (status.model) {
+                model.innerHTML = String.format('%s', status.model);
+            }
+            if (status.revision) {
+                revision.innerHTML = String.format('%s', status.revision);
+            }
+            if (status.imei) {
+                imei.innerHTML = String.format('%s', status.imei);
+            }
+            if (status.simslot == "1") {
+                simslot.innerHTML = 'SIM';
+            }
+            if (status.sim_state) {
+                sim_state.innerHTML = String.format('%s', status.sim_state);
+            }
+            if (status.operator) {
+                operator.innerHTML = String.format('%s', operaMap[status.operator] || status.operator);
+            }
+            if (status.iccid) {
+                iccid.innerHTML = String.format('%s', status.iccid);
+            }
+            if (status.imsi) {
+                imsi.innerHTML = String.format('%s', status.imsi);
+            }
+            if (status.mode) {
+                mode.innerHTML = String.format('%s', status.mode);
+            }
+            if (status.band) {
+                band.innerHTML = String.format('%s', status.band);
+            }
+            if (status.pci) {
+                pci.innerHTML = String.format('%s', status.pci);
+            }
+            if (status.arfcn) {
+                arfcn.innerHTML = String.format('%s', status.arfcn);
+            }
+            if (status.rxlev) {
+                rxlev.innerHTML = String.format('%sdbm', status.rxlev);
+            }
+            if (status.rsrp) {
+                rsrp.innerHTML = String.format('%sdbm', status.rsrp);
+            }
+            if (status.rsrq) {
+                rsrq.innerHTML = String.format('%sdbm', status.rsrq);
+            }
+            if (status.tac) {
+                tac.innerHTML = String.format('%s', status.tac);
+            }
+        });
+    })();
+</script>
+<%+footer%>

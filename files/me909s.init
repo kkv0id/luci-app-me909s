@@ -1,0 +1,45 @@
+#!/bin/sh /etc/rc.common
+
+START=00
+
+SIM_GPIO_PATH="/sys/class/gpio/sim_select/value"
+USB_GPIO_PATH="/sys/class/gpio/usb_power/value"
+
+validate_gpio_value() {
+    case "$1" in
+        0|1) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+start() {
+    local current_sim_val current_usb_val
+    
+    local sim_slot=$(uci -q get me909s.@setting[0].sim_slot)
+    local usb_power=$(uci -q get me909s.@setting[0].usb_power)
+    
+    current_sim_val=$(cat "$SIM_GPIO_PATH" 2>/dev/null)
+    validate_gpio_value "$sim_slot" && [ -n "$current_sim_val" ] && [ "$sim_slot" != "$current_sim_val" ] && {
+        echo -n 0 > $USB_GPIO_PATH 2>/dev/null
+        echo -n $sim_slot > $SIM_GPIO_PATH 2>/dev/null
+    }
+    
+    current_usb_val=$(cat "$USB_GPIO_PATH" 2>/dev/null)
+
+    validate_gpio_value "$usb_power" && [ -n "$current_usb_val" ] && [ "$usb_power" != "$current_usb_val" ] && {
+        echo -n $usb_power > $USB_GPIO_PATH
+    }
+    
+}
+
+stop() {
+    return 0
+}
+
+restart(){
+    start
+}
+
+reload(){
+    start
+}

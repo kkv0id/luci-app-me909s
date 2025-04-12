@@ -1,0 +1,69 @@
+<%
+    local sys = require "luci.sys"
+    local ctl_divece = sys.exec("grep \".ctl_device=\" /var/state/network | awk -F'=' '{print $2}' |tr -d \"'\"")
+    if ctl_divece then
+        ctl_divece = string.gsub(ctl_divece, "%s+", "")
+    end
+%>
+<%+header%>
+<div class="cbi-map">
+    <div class="cbi-map-descr"><%:参考华为ME909sAT命令手册%></div>
+    <div class="cbi-section fade-in">
+        <% if not ctl_divece or ctl_divece == '' then %>
+        <h3 class="error"><%:未检测到ME909S模块%></h3>
+        <% else %>
+        <span class="panel-title"><%:AT命令%></span>
+        <span class="cbi-section-descr" id="ctl-device" value="<%=ctl_divece%>"></span>
+        <div>
+            <input style="width:38%;" type="text" name="atcmd" class="cbi-input-text"></input>
+            <span style="margin: 0 4px;"><%:超时%>:</span>
+            <input style="width:32px;text-align:center;" type="number" name="timeout" class="cbi-input-text" value="30"></input>
+            <input type="button" value="<%:发送%>" class="cbi-button cbi-button-apply" onclick="sendATcmd()" />
+        </div>
+        <textarea style="margin-top:12px;width:50%;" readonly="readonly" name="atlog" class="cbi-input-textarea" wrap="off"></textarea>
+        <% end %>
+    </div>
+    <div class="cbi-section fade-in">
+        <span class="panel-title"><%:UCS2%></span>
+        <span class="cbi-section-descr"><%:utf8编码转为ucs2编码的16进制%></span>
+        <div>
+            <input style="width:45%;" type="text" name="utf8" class="cbi-input-text"></input>
+            <input type="button" value="<%:转码%>" class="cbi-button cbi-button-apply" onclick="utf8ToUcs2Hex()" />
+        </div>
+        <textarea style="margin-top:12px;width:50%;" readonly="readonly" name="ucs2" class="cbi-input-textarea" wrap="off"></textarea>
+    </div>
+</div>
+<script type="text/javascript">
+    function sendATcmd() {
+       let ctl_device = document.getElementById("ctl-device").getAttribute('value')
+       let atcmd = document.querySelector('input[name="atcmd"]')
+       let timeout = document.querySelector('input[name="timeout"]')
+       let atlog = document.querySelector('textarea[name="atlog"]')
+   
+        if (atcmd.value.length == 0) {
+            atlog.value = atlog.value + '<%:请输入AT命令%>\r\n';
+            return false;
+        }
+        XHR.get('<%=luci.dispatcher.build_url("admin", "me909s", "at", "cmd")%>',
+            { ctl_device, atcmd: atcmd.value, timeout: timeout.value },
+            function (x) {
+                console.log(x);
+                atcmd.value = '';
+                atlog.value = atlog.value + x.responseText;
+            }
+        );
+    }
+    function utf8ToUcs2Hex() {
+        let str = document.querySelector('input[name="utf8"]').value
+        let ucs2 = document.querySelector('textarea[name="ucs2"]')
+        let hex = '';
+        for (let i = 0; i < str.length; i++) {
+            const codeUnit = str.charCodeAt(i);
+            hex += codeUnit.toString(16).padStart(4, '0').toUpperCase();
+        }
+        ucs2.value = hex;
+    }
+</script>
+
+
+<%+footer%>
